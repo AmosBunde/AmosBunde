@@ -1,5 +1,5 @@
 # 💫 About Me:
--Kafka,Flink, Rust, RAG,Elastic Search<br>-Open Source AI projects<br>-Kubernetes<br>-Kubernetes and Cloud Native development<br>-Data Infrastructure, MLOPS and AI<br>-Looking for a job, <br>-Data Architecture,<br>- Data Infrastructure, <br>-Airflow,<br>-Dagster,<br>-Linux, <br>- Flask, FastAPI.
+-Kafka,Flink, RAG,Elastic Search<br>-Open Source AI projects<br>-Kubernetes<br>-Kubernetes and Cloud Native development<br>-Data Infrastructure, MLOPS and AI<br>-Looking for a job, <br>-Data Architecture,<br>- Data Infrastructure, <br>- Airflow,<br>- Dagster,<br>- Linux, <br>- Flask, FastAPI, <br>-Python, Java, SQL.
 
 
 ## 🌐 Socials:
