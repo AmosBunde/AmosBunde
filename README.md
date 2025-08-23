@@ -1,5 +1,5 @@
 # 💫 About Me:
--Kafka,Flink, RAG,Elastic Search<br>-Open Source AI projects<br>-Kubernetes<br>-Kubernetes and Cloud Native development<br>-Data Infrastructure, MLOPS and AI<br>-Looking for a job, <br>-Data Architecture,<br>- Data Infrastructure, <br>- Airflow,<br>- Dagster,<br>- Linux, <br>- Flask, FastAPI, <br>-Python, Java, SQL,- Data Science, Artificial Intelligence and Machine Learning.
+-Kafka,Flink, RAG,Elastic Search<br>-Open Source AI projects<br>-Kubernetes<br>-Kubernetes and Cloud Native development<br>-Data Infrastructure, MLOPS and AI<br>-Looking for a job, <br>-Data Architecture,<br>- Data Infrastructure, <br>- Airflow,<br>- Dagster,<br>- Linux, <br>- Flask, FastAPI, <br>-Python, Java, SQL, Data Science, Artificial Intelligence and Machine Learning.
 
 
 ## 🌐 Socials:
@@ -19,4 +19,5 @@
 [![](https://visitcount.itsvg.in/api?id=AmosBunde&icon=0&color=0)](https://visitcount.itsvg.in)
 
 <!-- Proudly created with GPRM ( https://gprm.itsvg.in ) -->
+
 
