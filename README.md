@@ -3,13 +3,20 @@
   <img src="assets/banner-light.svg" alt="Amos Bunde. I build machine-learning systems and the evaluations that decide whether to trust them." width="100%">
 </picture>
 
-I am Head of Data and AI at Inkomoko in Nairobi, with twelve years in data, machine learning and platform engineering. Most of what I publish here asks one question of a system: does the number we are looking at still mean what we think it means?
+I am Head of Data and AI at Inkomoko in Nairobi, with twelve years in data, machine learning and platform engineering. Most of what I publish here asks one question: does the number we are looking at still mean what we think it means?
+
+If you have two minutes, read the figure below. If you have ten, open one study and go straight to its `REPORT.md`.
 
 [Portfolio](https://iam-amos.io) | [LinkedIn](https://www.linkedin.com/in/amos-bunde) | [ORCID](https://orcid.org/0009-0003-3419-5715)
 
-## Research studies
+## What the studies found
 
-Small, complete studies. Each has a plan written before the experiments ran, tests, result files, and a report that says which predictions failed.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/findings-dark.svg">
+  <img src="assets/findings-light.svg" alt="Six results from the studies in the table below, each shown as a baseline and the number the study measured." width="100%">
+</picture>
+
+Each study is small and complete: a plan written before the experiments ran, tests, committed result files, and a report that says which predictions failed.
 
 | Question | What I found | Built with |
 |---|---|---|
@@ -42,6 +49,14 @@ Case studies with architecture diagrams are on [iam-amos.io/projects](https://ia
 - **EleutherAI/lm-evaluation-harness.** Diagnosed a silent defect that left 35 AfriXNLI task configurations in 18 African languages scoring one identical prompt: the format strings passed through the template engine unrendered, with no error and plausible scores. I showed it with prompt hashes (200 documents produced 1 distinct prompt) and proposed a patch. [Issue #3930](https://github.com/EleutherAI/lm-evaluation-harness/issues/3930), [proposed patch #3932](https://github.com/EleutherAI/lm-evaluation-harness/pull/3932) (closed without merge).
 - **[Agent-Arena](https://github.com/AmosBunde/Agent-Arena).** An evaluation platform for LLM agents: cost per correct answer as the headline metric and deterministic replay of traces.
 - **[corpus-gate](https://github.com/AmosBunde/corpus-gate)** and **[anomaly-desk](https://github.com/AmosBunde/anomaly-desk).** Two builds in progress on one rule: nothing deploys without passing its evaluation suite.
+
+## Writing
+
+- [Your Eval Harness Is Optimizing a Number That Hides the Thing You Care About](https://www.linkedin.com/pulse/your-eval-harness-optimizing-number-hides-thing-you-care-amos-b--3ourf/)
+- [Our Clinical RAG Evaluation Was Rewarding the Wrong Behaviour](https://www.linkedin.com/pulse/our-clinical-rag-evaluation-rewarding-wrong-behaviour-amos-b--kkv7f/)
+- [Static vs Dynamic Quantization: What Actually Breaks, and When](https://www.linkedin.com/pulse/static-dynamic-quantization-what-actually-breaks-when-amos-b--w6qsf/)
+
+More on [iam-amos.io/writing](https://iam-amos.io/writing/).
 
 ## Learning log
 
