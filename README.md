@@ -3,16 +3,18 @@
   <img src="assets/banner-light.svg" alt="Amos Bunde. How wrong is a test set that sits next to its training data?" width="100%">
 </picture>
 
-A model is usually scored on test data drawn from the same place as its training data: neighbouring fields, neighbouring camera positions, workloads of the same size. Deployment asks for something else. I measure the difference, and I have now run the same experiment in four unrelated domains.
+A model is usually scored on test data that sits next to its training data: neighbouring fields, neighbouring camera positions, workloads of the same size. Deployment asks for something further away. I went back to the per-item results of three of my studies, placed every test item at its actual distance from the training data, and drew the curve.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/one-question-dark.svg">
-  <img src="assets/one-question-light.svg" alt="Four panels, one per study. Crop-type maps: macro-F1 falls from 0.29 to 0.21 when a whole image tile is held out. Novel-view 3D: PSNR falls from 32.9 to 31.0 dB when a whole patch of viewpoints is held out. Runtime prediction: gradient boosting error rises from 23.6% to 50.2% on larger workloads while a mechanistic simulator stays near 20%. Reward gaming: agents trained to game graders game an unseen exploit type in 20% of episodes, agents trained honestly in 0%." width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="analysis/held-out-distance/docs/img/distance-dark.svg">
+  <img src="analysis/held-out-distance/docs/img/distance-light.svg" alt="Three panels on one vertical scale: error relative to the test items nearest the training data. Crop maps: error rises to 1.12 times. Novel-view 3D: image error rises to 2.15 times while depth error stays near 1.1 times. Runtime prediction: gradient boosting rises to 3.45 times and log-linear regression to 2.25 times, while the mechanistic simulator stays near 0.93 times." width="100%">
 </picture>
 
-<sub>Each panel has its own vertical scale; read the numbers, not the slopes. All four are small studies on modest hardware, and each report lists its limits. The runtime measurements were noisy (30% repeat error).</sub>
+<sub>Error relative to the test items nearest the training data; bands are 95% intervals from a cluster bootstrap. An exploratory re-analysis of small studies, with its confounds listed in the <a href="analysis/held-out-distance/">write-up, code and data</a>.</sub>
 
-**A pattern I see, not yet a result.** The gap is not a property of the model alone; it depends on how far the test asks the model to travel. Where the model carried structure about the problem (a simulator built from operator costs, the geometry inside a radiance field), the gap was small. Where it had only fitted a surface, it was large. Four small studies do not establish that, and I cannot yet predict the gap before collecting the held-out data. That is the question I most want to answer.
+**Every predictor fitted directly to its target got worse with distance**: crop classification by 12%, image error by 2.2 times, a gradient-boosted runtime model by 3.5 times. **Two outputs did not**: the depth inside the radiance field, and a simulator that adds up operator costs it measured separately. Both are constrained by a model of how the problem works.
+
+Two cases are thin evidence, so I state it as a prediction that can fail: on the same test items, a predictor that encodes how its domain works should show a flatter curve than one that does not. I have not yet tested it in the crop domain. If the near part of a curve turns out to predict the far part, the gap could be estimated before any far data is collected, and that is the question I most want to answer.
 
 I am Head of Data and AI at Inkomoko in Nairobi, with twelve years in data, machine learning and platform engineering. [Portfolio](https://iam-amos.io) | [LinkedIn](https://www.linkedin.com/in/amos-bunde) | [ORCID](https://orcid.org/0009-0003-3419-5715)
 
@@ -40,7 +42,8 @@ I keep these in the reports, because a write-up with no failed predictions usual
 
 ## Open questions
 
-- Can the gap between a comfortable test and a hard one be predicted from the training set alone?
+- Does the near-training part of an error-against-distance curve predict the far part, so the gap can be estimated before far data exists?
+- Would a crop model with explicit phenology structure show a flatter curve than the temporal CNN on the same fields?
 - In the 3D study the held-out views lost image quality but kept their geometry, and view-dependent colour explained only a tenth of the loss. What explains the rest?
 - Agents that learned to game graders went straight for an unfamiliar object in 88% of episodes but succeeded in gaming with it only 20% of the time. Does the habit survive when honest work is also rewarded during training?
 - A simulator calibrated on a busy machine was biased one way and on a quiet machine the other. How should a performance model carry the state of the machine it was calibrated on?
