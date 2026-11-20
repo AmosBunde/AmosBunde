@@ -77,8 +77,19 @@ def test_curve_recovers_a_planted_trend():
 def test_committed_extracts_have_the_expected_shape():
     crop = pd.read_csv(analysis.DATA / "crop_fields.csv.gz")
     assert set(crop.design) >= {"random", "block", "tile"} and crop.y.between(0, 6).all() and (crop.distance_m > 0).all()
-    assert crop.groupby(["design", "seed"]).size().nunique() == 1          # every field once per design and seed
+    assert crop.groupby(["model", "design", "seed"]).size().nunique() == 1  # every field once per model, design and seed
+    assert set(crop.model) == {"tcn", "rf", "pheno"}
     views = pd.read_csv(analysis.DATA / "view_tests.csv.gz")
     assert views.run_id.nunique() == 18 and len(views) == 18 * 24
     runtime = pd.read_csv(analysis.DATA / "runtime_cells.csv.gz")
     assert (runtime[runtime.design == "size"].extrapolation > 1).all() and (runtime.measured > 0).all()
+
+
+def test_structure_test_reports_every_planned_quantity():
+    out = analysis.structure_test(n_boot=20)
+    assert set(out["models"]) == {"rf", "tcn", "pheno"}
+    assert set(out["tests"]) == {"G", "P1_R_pheno_minus_R_rf", "P2_R_pheno_minus_R_tcn", "P3_far_macro_f1_pheno_minus_rf"}
+    for m in out["models"].values():
+        assert len(m["macro_f1"]) == 6 and m["relative_error"][0] == 1.0
+    g = out["tests"]["G"]
+    assert abs(g["bar"] - (0.088 + out["models"]["rf"]["macro_f1"][0]) / 2) < 1e-12

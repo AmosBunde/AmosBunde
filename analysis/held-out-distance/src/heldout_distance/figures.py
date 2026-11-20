@@ -8,6 +8,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.ticker  # noqa: E402,F401
 
 OUT = Path("docs/img")
 THEMES = {
@@ -27,22 +28,48 @@ def distance_figure(s: dict, theme: str) -> None:
     t = THEMES[theme]
     plt.rcParams.update({"font.family": "DejaVu Serif", "font.size": 11, "text.color": t["ink"], "axes.labelcolor": t["muted"],
                          "xtick.color": t["muted"], "ytick.color": t["muted"], "svg.fonttype": "path"})
-    fig, axes = plt.subplots(1, 3, figsize=(12.6, 4.7), sharey=True, facecolor=t["bg"])
-    panels = (
-        ("Crop-type maps", "distance to the nearest training field (m)",
-         [(s["crop"], t["fit"], "temporal CNN, 1 − macro-F1")]),
-        ("Novel-view 3D", "angle to the nearest training camera (degrees)",
-         [(s["views"], t["fit"], "appearance: image error"), (s["views"]["depth"], t["structure"], "geometry: depth error")]),
-        ("Runtime prediction", "test workload size ÷ largest training workload",
-         [(s["runtime"]["methods"]["gbm"], t["fit"], "gradient boosting"),
-          (s["runtime"]["methods"]["loglinear"], t["other"], "log-linear regression"),
-          (s["runtime"]["methods"]["sim"], t["structure"], "mechanistic simulator")]),
-    )
-    for ax, (title, xlabel, series) in zip(axes, panels):
-        ax.set_facecolor(t["bg"])
+    fig = plt.figure(figsize=(12.8, 4.8), facecolor=t["bg"])
+    grid = fig.add_gridspec(1, 3, left=0.06, right=0.99, top=0.88, bottom=0.15, wspace=0.22)
+    ax_crop = fig.add_subplot(grid[0])
+    ax_view = fig.add_subplot(grid[1])
+    ax_run = fig.add_subplot(grid[2], sharey=ax_view)
+    models = s.get("structure_test", {}).get("models", {})
+
+    # Crop panel: absolute macro-F1, so the level of each model is visible as well as its slope.
+    for key, colour, label in (("tcn", t["fit"], "temporal CNN, raw series"), ("rf", t["other"], "forest, raw series"),
+                               ("pheno", t["structure"], "forest, growth-curve parameters")):
+        if key not in models:
+            continue
+        c = models[key]
+        lo, hi = c["macro_f1_ci"]
+        ax_crop.fill_between(c["bin_centre"], lo, hi, color=colour, alpha=0.16, linewidth=0)
+        ax_crop.plot(c["bin_centre"], c["macro_f1"], color=colour, lw=2.4, marker="o", ms=5.5, mec=t["bg"], mew=1.2,
+                     label=label, zorder=3)
+    ax_crop.axhline(s["structure_test"]["majority_macro_f1"], color=t["muted"], lw=1, ls=(0, (4, 4)), zorder=1)
+    ax_crop.text(1180, s["structure_test"]["majority_macro_f1"] + 0.006, "majority class", ha="right", fontsize=9,
+                 color=t["muted"], style="italic")
+    ax_crop.set_ylim(0.05, 0.40)
+    ax_crop.set_ylabel("macro-F1 (higher is better)", fontsize=10)
+    ax_crop.set_xticks([30, 100, 300, 1000])
+
+    for c, colour, label in ((s["views"], t["fit"], "appearance: image error"), (s["views"]["depth"], t["structure"], "geometry: depth error")):
+        _line(ax_view, c, colour, label, t)
+    for c, colour, label in ((s["runtime"]["methods"]["gbm"], t["fit"], "gradient boosting"),
+                             (s["runtime"]["methods"]["loglinear"], t["other"], "log-linear regression"),
+                             (s["runtime"]["methods"]["sim"], t["structure"], "mechanistic simulator")):
+        _line(ax_run, c, colour, label, t)
+    for ax in (ax_view, ax_run):
         ax.axhline(1.0, color=t["muted"], lw=1, ls=(0, (4, 4)), zorder=1)
-        for c, colour, label in series:
-            _line(ax, c, colour, label, t)
+    ax_view.set_ylabel("error relative to the nearest test items\n(lower is better)", fontsize=10)
+    ax_view.set_ylim(0.5, 4.4)
+    ax_view.set_yticks([1, 2, 3, 4], ["1\u00d7", "2\u00d7", "3\u00d7", "4\u00d7"])
+    ax_view.set_xticks([10, 15, 20, 30])
+    plt.setp(ax_run.get_yticklabels(), visible=False)
+
+    for ax, title, xlabel in ((ax_crop, "Crop-type maps", "distance to the nearest training field (m)"),
+                              (ax_view, "Novel-view 3D", "angle to the nearest training camera (degrees)"),
+                              (ax_run, "Runtime prediction", "test workload size \u00f7 largest training workload")):
+        ax.set_facecolor(t["bg"])
         ax.set_xscale("log")
         ax.set_xlabel(xlabel, fontsize=10)
         ax.set_title(title, loc="left", fontsize=14, fontweight="bold", color=t["ink"], pad=12)
@@ -58,11 +85,7 @@ def distance_figure(s: dict, theme: str) -> None:
         leg = ax.legend(loc="upper left", fontsize=9.5, frameon=False, handlelength=1.6)
         for txt in leg.get_texts():
             txt.set_color(t["ink"])
-    axes[0].set_ylabel("error, relative to the test items\nnearest the training data", fontsize=10)
-    axes[0].set_ylim(0.5, 4.4)
-    axes[0].set_yticks([1, 2, 3, 4], ["1×", "2×", "3×", "4×"])
-    axes[0].set_xticks([30, 100, 300, 1000]), axes[1].set_xticks([10, 15, 20, 30]), axes[2].set_xticks([0.03, 1, 10, 100])
-    fig.subplots_adjust(left=0.075, right=0.99, top=0.88, bottom=0.15, wspace=0.10)
+    ax_crop.set_xticks([30, 100, 300, 1000]), ax_view.set_xticks([10, 15, 20, 30]), ax_run.set_xticks([0.03, 1, 10, 100])
     OUT.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT / f"distance-{theme}.svg", facecolor=t["bg"])
     fig.savefig(OUT / f"distance-{theme}.png", dpi=120, facecolor=t["bg"])
