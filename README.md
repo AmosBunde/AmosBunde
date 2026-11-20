@@ -7,14 +7,16 @@ A model is usually scored on test data that sits next to its training data: neig
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="analysis/held-out-distance/docs/img/distance-dark.svg">
-  <img src="analysis/held-out-distance/docs/img/distance-light.svg" alt="Three panels on one vertical scale: error relative to the test items nearest the training data. Crop maps: error rises to 1.12 times. Novel-view 3D: image error rises to 2.15 times while depth error stays near 1.1 times. Runtime prediction: gradient boosting rises to 3.45 times and log-linear regression to 2.25 times, while the mechanistic simulator stays near 0.93 times." width="100%">
+  <img src="analysis/held-out-distance/docs/img/distance-light.svg" alt="Three panels. Crop maps, in macro-F1: the temporal CNN falls from 0.32 to 0.24 with distance and the forest on the raw series from 0.22 to 0.16, while the forest on growth-curve parameters stays near 0.16 throughout. Novel-view 3D: image error rises to 2.15 times its near-training value while depth error stays near 1.1 times. Runtime prediction: gradient boosting rises to 3.45 times and log-linear regression to 2.25 times, while the mechanistic simulator stays near 0.93 times." width="100%">
 </picture>
 
-<sub>Error relative to the test items nearest the training data; bands are 95% intervals from a cluster bootstrap. An exploratory re-analysis of small studies, with its confounds listed in the <a href="analysis/held-out-distance/">write-up, code and data</a>.</sub>
+<sub>Red and grey: fitted directly to the target. Blue: constrained by a model of the problem. Bands are 95% intervals from a cluster bootstrap. Small studies; the confounds are listed in the <a href="analysis/held-out-distance/">write-up, code and data</a>.</sub>
 
-**Every predictor fitted directly to its target got worse with distance**: crop classification by 12%, image error by 2.2 times, a gradient-boosted runtime model by 3.5 times. **Two outputs did not**: the depth inside the radiance field, and a simulator that adds up operator costs it measured separately. Both are constrained by a model of how the problem works.
+**Every predictor fitted directly to its target got worse with distance.** Two outputs did not: the depth inside a radiance field, and a simulator that adds up operator costs. I noticed that after the fact, so I turned it into a prediction that could fail and tested it where I had not looked.
 
-Two cases are thin evidence, so I state it as a prediction that can fail: on the same test items, a predictor that encodes how its domain works should show a flatter curve than one that does not. I have not yet tested it in the crop domain. If the near part of a curve turns out to predict the far part, the gap could be estimated before any far data is collected, and that is the question I most want to answer.
+**The test.** In the crop study I gave the same random forest two views of each field: the raw satellite time series, or 18 parameters of a fitted growth curve. The [plan and pass rules](https://github.com/AmosBunde/crop-map-spatial-validation/blob/main/FOLLOW_UP_PLAN.md) were committed before the run, and I wrote that I expected it to fail. It held: the structured model's error ratio from near to far was 1.02 against 1.08, difference −0.059 (95% interval −0.101 to −0.018).
+
+**What it means, and does not.** The structured model is not the better classifier; it is worse beside the training data, and a neural network beats both everywhere. What the test shows is that everything the raw series adds is gained within a few hundred metres of a training field. Beyond 400 m the two forests score the same. Part of what a flexible model learns is the place it was trained in, and a distance curve shows how much.
 
 I am Head of Data and AI at Inkomoko in Nairobi, with twelve years in data, machine learning and platform engineering. [Portfolio](https://iam-amos.io) | [LinkedIn](https://www.linkedin.com/in/amos-bunde) | [ORCID](https://orcid.org/0009-0003-3419-5715)
 
@@ -42,8 +44,8 @@ I keep these in the reports, because a write-up with no failed predictions usual
 
 ## Open questions
 
+- Can a model be both structured and competitive beside its training data? The growth-curve forest kept a flat curve by discarding local signal; the harder goal is to keep the curve flat without the loss.
 - Does the near-training part of an error-against-distance curve predict the far part, so the gap can be estimated before far data exists?
-- Would a crop model with explicit phenology structure show a flatter curve than the temporal CNN on the same fields?
 - In the 3D study the held-out views lost image quality but kept their geometry, and view-dependent colour explained only a tenth of the loss. What explains the rest?
 - Agents that learned to game graders went straight for an unfamiliar object in 88% of episodes but succeeded in gaming with it only 20% of the time. Does the habit survive when honest work is also rewarded during training?
 - A simulator calibrated on a busy machine was biased one way and on a quiet machine the other. How should a performance model carry the state of the machine it was calibrated on?

@@ -27,6 +27,7 @@ CROP_EDGES_MATCHED = [0, 50, 100, 200, 400, 800, 1e9]
 VIEW_EDGES = [0, 12, 16, 20, 26, 90]
 RUNTIME_EDGES = [0, 1, 3, 10, 30, 1e9]
 N_CROP_CLASSES = 7
+MAJORITY_MACRO_F1 = 0.088          # the crop study's majority-class baseline
 
 
 def _bins(values: np.ndarray, edges: list) -> np.ndarray:
@@ -57,6 +58,7 @@ def crop(n_boot: int = 2000, designs: tuple = ("random", "block")) -> dict:
     effect of distance with the effect of a smaller training set. ``designs=None`` pools all.
     """
     d = pd.read_csv(DATA / "crop_fields.csv.gz")
+    d = d[d.model == "tcn"]
     if designs is not None:
         d = d[d.design.isin(designs)].reset_index(drop=True)
     y, pred, x = d.y.to_numpy(), d.pred.to_numpy(), d.distance_m.to_numpy()
@@ -74,6 +76,59 @@ def crop(n_boot: int = 2000, designs: tuple = ("random", "block")) -> dict:
                accuracy=[float((y[b == k] == pred[b == k]).mean()) for k in range(n)],
                class_share=[np.round(np.bincount(y[b == k], minlength=N_CROP_CLASSES) / (b == k).sum(), 4).tolist()
                             for k in range(n)])
+    return out
+
+
+def structure_test(n_boot: int = 2000) -> dict:
+    """The planned test: does a forest on growth-curve parameters degrade less with distance than
+    the same forest on the raw series (and than the network), on the same test fields?
+
+    Rules are in the crop study's FOLLOW_UP_PLAN.md. R is the error in the farthest distance
+    group over the error in the nearest. Models are kept paired inside every resample.
+    """
+    d = pd.read_csv(DATA / "crop_fields.csv.gz")
+    d = d[d.design.isin(["random", "block"])]
+    key = ["design", "seed", "field"]
+    wide = d.pivot(index=key, columns="model", values="pred")
+    if "pheno" not in wide:
+        return {}
+    first = d[d.model == "tcn"].set_index(key).loc[wide.index]
+    y, x, block = first.y.to_numpy(), first.distance_m.to_numpy(), first.block.to_numpy()
+    models = ("rf", "tcn", "pheno")
+    pred = {m: wide[m].to_numpy().astype(int) for m in models}
+    b = _bins(x, CROP_EDGES_MATCHED)
+    n = len(CROP_EDGES_MATCHED) - 1
+
+    def f1_all(idx):
+        return np.array([[macro_f1(y[idx][b[idx] == k], pred[m][idx][b[idx] == k], N_CROP_CLASSES) for k in range(n)]
+                         for m in models])
+
+    point, boot = f1_all(np.arange(len(y))), cluster_bootstrap(block, f1_all, n_boot, seed=11)   # (B, 3, n)
+    ratio = lambda f: (1 - f[..., -1]) / (1 - f[..., 0])                                     # noqa: E731
+    r_point, r_boot = ratio(point), ratio(boot)
+    out = {"groups": CROP_EDGES_MATCHED[:-1], "n": [int((b == k).sum()) for k in range(n)], "n_clusters": int(len(np.unique(block))),
+           "majority_macro_f1": MAJORITY_MACRO_F1, "models": {}}
+    for i, m in enumerate(models):
+        out["models"][m] = {"macro_f1": point[i].tolist(), "macro_f1_ci": interval(boot[:, i, :]),
+                            "relative_error": ((1 - point[i]) / (1 - point[i, 0])).tolist(),
+                            "relative_error_ci": interval((1 - boot[:, i, :]) / (1 - boot[:, i, [0]])),
+                            "bin_centre": [float(np.median(x[b == k])) for k in range(n)],
+                            "R": float(r_point[i]), "R_ci": interval(r_boot[:, i]),
+                            "drop_macro_f1": float(point[i, 0] - point[i, -1]),
+                            "drop_macro_f1_ci": interval(boot[:, i, 0] - boot[:, i, -1])}
+    ph, rf, tcn = models.index("pheno"), models.index("rf"), models.index("tcn")
+    guard_bar = (MAJORITY_MACRO_F1 + point[rf, 0]) / 2
+    diff = lambda a, c: {"difference": float(r_point[a] - r_point[c]), "ci": interval(r_boot[:, a] - r_boot[:, c])}  # noqa: E731
+    p1, p2 = diff(ph, rf), diff(ph, tcn)
+    far = {"difference": float(point[ph, -1] - point[rf, -1]), "ci": interval(boot[:, ph, -1] - boot[:, rf, -1])}
+    guard = bool(point[ph, 0] >= guard_bar)
+    verdict = lambda t: bool(t["difference"] < 0 and t["ci"][1] < 0)                           # noqa: E731
+    out["tests"] = {
+        "G": {"pheno_near_macro_f1": float(point[ph, 0]), "bar": float(guard_bar), "passed": guard},
+        "P1_R_pheno_minus_R_rf": {**p1, "supported": bool(guard and verdict(p1))},
+        "P2_R_pheno_minus_R_tcn": {**p2, "supported": bool(guard and verdict(p2))},
+        "P3_far_macro_f1_pheno_minus_rf": {**far, "supported": bool(far["ci"][1] >= 0)},
+    }
     return out
 
 
@@ -119,7 +174,7 @@ def summarise(n_boot: int = 2000) -> dict:
     with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)       # a resample can leave a small group empty
         s = {"n_boot": n_boot, "crop": crop(n_boot), "crop_all_designs": crop(n_boot, designs=None),
-             "views": views(n_boot), "runtime": runtime(n_boot)}
+             "views": views(n_boot), "runtime": runtime(n_boot), "structure_test": structure_test(n_boot)}
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / "summary.json").write_text(json.dumps(s, indent=2))
     return s
